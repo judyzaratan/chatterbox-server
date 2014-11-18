@@ -11,6 +11,8 @@ this file and include it in basic-server.js so that it actually works.
 *Hint* Check out the node module documentation at http://nodejs.org/api/modules.html.
 
 **************************************************************/
+var fs = require("fs");
+var path = require("path");
 var exports = module.exports = {};
 exports.feedback = { results: []};
 exports.roomname = {};
@@ -34,17 +36,32 @@ exports.requestHandler = function(request, response) {
 
   // The outgoing status.
   var statusCode = 200;
+  var headers = defaultCorsHeaders;
+
+
 
   var parseRoomname = function(url){
     return url.replace('/classes/','').replace('/','');
   };
   var room = parseRoomname(request.url);
   if(!(request.url.substring(0,8) === "/classes") && request.method === "GET"){
+    if(request.url === '/'){
+      statusCode = 200;
+      var filePath = path.join(__dirname, './client/client/index.html');
+      fs.readFile(filePath,{encoding:"utf8"}, function (err,data) {
+        if (err) {
+          response.writeHead(404);
+          response.end(JSON.stringify(err));
+          return;
+        }
+        response.writeHead(200, {'Content-type':'text/html'});
+        response.end(data);
+      });
+    }
     statusCode = 404;
-  }
+  } else{
 
-
-  var headers = defaultCorsHeaders;
+  console.log("i'm still going");
 
   var data = '';
   if(request.method === "POST"){
@@ -74,6 +91,8 @@ exports.requestHandler = function(request, response) {
 
   // .writeHead() writes to the request line and headers of the response,
   // which includes the status and all headers.
+  //
+
   response.writeHead(statusCode, headers);
 
   // Make sure to always call response.end() - Node may not send
@@ -84,8 +103,9 @@ exports.requestHandler = function(request, response) {
   // Calling .end "flushes" the response's internal buffer, forcing
   // node to actually send all the data over to the client.
   response.end(JSON.stringify(exports.feedback));
+  // response.end();
 };
-
+};
 // These headers will allow Cross-Origin Resource Sharing (CORS).
 // This code allows this server to talk to websites that
 // are on different domains, for instance, your chat client.
