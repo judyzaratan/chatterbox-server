@@ -13,6 +13,7 @@ this file and include it in basic-server.js so that it actually works.
 **************************************************************/
 var exports = module.exports = {};
 exports.feedback = { results: []};
+exports.roomname = {};
 exports.requestHandler = function(request, response) {
   // Request and Response come from node's http module.
   //
@@ -34,25 +35,22 @@ exports.requestHandler = function(request, response) {
   // The outgoing status.
   var statusCode = 200;
 
-
-  // if(request.url){
-  //   var room = request.url.replace('/classes/','').replace('/','');
-  //   console.log(room);
-  // }
-  // See the note below about CORS headers.
-  var headers = defaultCorsHeaders;
-  if(request.method === "GET"){
-    console.log('getted');
+  var parseRoomname = function(url){
+    return url.replace('/classes/','').replace('/','');
+  };
+  var room = parseRoomname(request.url);
+  if(!(request.url.substring(0,8) === "/classes") && request.method === "GET"){
+    statusCode = 404;
   }
+
+
+  var headers = defaultCorsHeaders;
+
   var data = '';
   if(request.method === "POST"){
     statusCode = 201;
-    console.log(request.url);
-    var room = request.url.replace('/classes/','').replace('/','');
-    console.log(room);
     request.on("data", function(el){
       data += el;
-      console.log(data);
     });
     request.on("end", function(){
       var parsedJSON = JSON.parse(data);
@@ -61,15 +59,13 @@ exports.requestHandler = function(request, response) {
       }
       if(!parsedJSON.roomname){
         parsedJSON.roomname = room;
+        exports.roomname.room = room;
       };
       exports.feedback.results.push(parsedJSON);
-      // console.log(parsedJSON.roomname);
     });
   }
 
-  // request.on("data", function(el){
-  //   console.log("data", String(el));
-  // })
+
   // Tell the client we are sending them plain text.
   //
   // You will need to change this if you are sending something
